@@ -7,7 +7,8 @@ This repository contains a PyTorch model for reproducing the experiment.
 # How To Use PPHM-GAN Models
 
 Prerequisites:
-- PyTorch, version 1.6 or higher
+- Python 3.8.1 or higher
+- PyTorch, version 1.7 or higher
 - numpy
 
 Please refer to the original paper (under submission) for the training details. 
