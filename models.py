@@ -96,6 +96,8 @@ class SN(nn.Module):
 
 # -------- modules for progressive growing --------------------------------------------------------------------------------
 # from StyleGAN: https://github.com/NVlabs/stylegan translated to pytorch
+# Copyright (c) 2019, NVIDIA CORPORATION. All rights reserved. modified by Masataka Kawai
+# original liscence is CC BY-NC
 class _blur2d(object):
     def __init__(self,  f=[1,2,1], normalize=True, flip=False, stride=1):
         assert isinstance(stride, int) and stride >= 1
@@ -368,6 +370,7 @@ class apply_bias(nn.Module):
         return x + b.view([1, -1, 1, 1])
 
 #=====================================================================================================
+# from StarGAN: https://github.com/yunjey/stargan
 class ResidualBlock(nn.Module):
     """Residual Block with instance normalization."""
     def __init__(self, dim_in, dim_out, act, inplace_act=True, resblock_bias=False, **kwargs):
