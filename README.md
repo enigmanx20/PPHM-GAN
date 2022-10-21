@@ -1,3 +1,4 @@
+[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 # PPHM-GAN for multi-stain transformation of pathological images
 
 Official implementation of PPHM-GAN (PAS, PAM, H&E, and Masson generative adversarial networks). An artifical multi-stain to multi-stain transformation platform for digital pathology.
