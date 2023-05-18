@@ -43,3 +43,5 @@ dummy_input_D = torch.zeros(1, 3, 512, 512)
 fake_image = G(dummy_input_G, dummy_stain_transformed_to)
 out_D = D(dummy_input_D)
 ```
+## Tuning recommendations
+Start the learning rate one of 1e-4, 3e-4, or 1e-5. If the training degredes, make smaller the learning rate. After sufficient iterationg (e.g. 10M images or 150K iteraions), cosine anealing decay ('cos_lr': True) for a while ('cos_kimg') will improve the quality . If a certain stain transformation pair fails, reduce the stains until CycleGAN-like ont-to-one transformation.
