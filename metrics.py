@@ -122,3 +122,91 @@ def PSNR(img_1, img_2, data_range=1.0):
     """batch capable PSNR"""
     mse = nn.functional.mse_loss(denorm(img_1), denorm(img_2), reduction='none').mean(dim=[1, 2, 3])
     return 10.0 *torch.log10(data_range / mse)
+
+#-----------------------------------------------------------------------
+class SSIM(nn.Module):
+    """batch capable structural similarity index measure (SSIM)"""
+    def __init__(self, w=11, per_channel=False, zero_padding=True):
+        super().__init__()
+        self.per_channel = per_channel
+        if zero_padding:
+            self.avg_pool = nn.AvgPool2d(kernel_size=w, stride=1, padding = 0)
+        else:
+            self.avg_pool = nn.AvgPool2d(kernel_size=w, stride=1, padding = (w -1)//2)
+        self.cs = [0.01**2, 0.03**2] # C1, C2       
+        
+    @torch.no_grad()
+    def forward(self, img_1, img_2):
+        mu1 = self.avg_pool( img_1.clamp_(0.0, 1.0) )
+        mu2 = self.avg_pool( img_2.clamp_(0.0, 1.0) )
+        
+        mu1_sq = mu1.pow(2)
+        mu2_sq = mu2.pow(2)
+        mu1_mu2 = mu1*mu2
+        
+        v1  = self.avg_pool(img_1*img_1) - mu1_sq
+        v2  = self.avg_pool(img_2*img_2) - mu2_sq
+        v12 = self.avg_pool(img_1*img_2) - mu1_mu2
+        
+        ssim = ((2*mu1_mu2 + self.cs[0])*(2*v12 + self.cs[1]))/((mu1_sq + mu2_sq + self.cs[0])*(v1 + v2 + self.cs[1]))
+        
+        if self.per_channel:
+            return ssim.mean(dim=[2, 3])
+        else:
+            return ssim.mean(dim=[1, 2, 3])   
+        
+class CSS(nn.Module):
+    """batch capable contrast structural similarity (CSS)"""
+    def __init__(self, w=11, per_channel=False, zero_padding=True):
+        super().__init__()
+        self.per_channel = per_channel
+        if zero_padding:
+            self.avg_pool = nn.AvgPool2d(kernel_size=w, stride=1, padding = 0)
+        else:
+            self.avg_pool = nn.AvgPool2d(kernel_size=w, stride=1, padding = (w -1)//2) 
+        self.c = 0.03**2 
+        
+    @torch.no_grad()
+    def forward(self, img_1, img_2):
+        mu1 = self.avg_pool( img_1.clamp_(0.0, 1.0) )
+        mu2 = self.avg_pool( img_2.clamp_(0.0, 1.0) )
+        
+        mu1_sq = mu1.pow(2)
+        mu2_sq = mu2.pow(2)
+        mu1_mu2 = mu1*mu2
+        
+        v1  = self.avg_pool(img_1*img_1) - mu1_sq
+        v2  = self.avg_pool(img_2*img_2) - mu2_sq
+        v12 = self.avg_pool(img_1*img_2) - mu1_mu2
+        
+        ssim = (2*v12 + self.c)/(v1 + v2 + self.c)
+        
+        if self.per_channel:
+            return ssim.mean(dim=[2, 3])
+        else:
+            return ssim.mean(dim=[1, 2, 3])
+#-----------------------------------------------------------------------
+import scipy
+class DSIS(nn.Module):
+    """batch capable domain shift inception score (DSIS)"""
+    def __init__(self, zero_padding=True):
+        super().__init__()
+        self.inception = InceptionV3()
+        self.inception.eval()
+        
+    @torch.no_grad()
+    def forward(self, img_1, img_2):
+        out1 = self.inception.intermediate_layers(img_1)
+        out2 = self.inception.intermediate_layers(img_2)
+        
+        dsis = []
+        for (layer1, layer2) in zip(out1, out2):
+            layer1 = layer1.cpu()
+            layer2 = layer2.cpu()
+            b, c = layer1.size(0), layer1.size(1)
+            
+            for i in range(b):
+                for j in range(c):
+                    distance = scipy.stats.wasserstein_distance(layer1[i, j].view(-1).numpy(), layer2[i, j].view(-1).numpy())
+                    dsis += [float(distance)]
+        return torch.tensor(dsis).mean()
